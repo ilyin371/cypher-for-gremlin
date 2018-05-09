@@ -19,6 +19,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.Collections2.filter;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
+import static org.apache.commons.collections.ListUtils.intersection;
 import static org.apache.commons.collections.ListUtils.subtract;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
@@ -81,11 +82,16 @@ public class TckResultsComparator {
 
         @SuppressWarnings("unchecked")
         public Diff compare(Features before) {
-            String errorMessage = format("Can't compare: scenarios size changed from %s to %s", before.scenarios.size(), this.scenarios.size());
-            checkState(this.scenarios.size() == before.scenarios.size(), errorMessage);
+            List<Scenario> common = intersection(this.scenarios, before.scenarios);
 
-            List<Scenario> newlyPassingScenarios = subtract(this.passingScenarios, before.passingScenarios);
-            List<Scenario> newlyFailedScenarios = subtract(this.failedScenarios, before.failedScenarios);
+            List<Scenario> newlyPassingScenarios = subtract(
+                intersection(common, this.passingScenarios),
+                intersection(common, before.passingScenarios)
+            );
+            List<Scenario> newlyFailedScenarios = subtract(
+                intersection(common, this.failedScenarios),
+                intersection(common, before.failedScenarios)
+            );
             int totalPassingScenarios = passingScenarios.size();
             int totalScenarios = scenarios.size();
             return new Diff(newlyPassingScenarios, newlyFailedScenarios,
