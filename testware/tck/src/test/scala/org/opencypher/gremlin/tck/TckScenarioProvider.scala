@@ -27,7 +27,7 @@ object TckScenarioProvider {
 
   def filterUserSelected(scenarios: Seq[Scenario]): Seq[Scenario] = {
     val scenarioName = System.getProperty("scenario")
-    val featureName = System.getProperty("feature")
+    val featureName = "LabelsAcceptance" // System.getProperty("feature")
 
     scenarios
       .filter(s => scenarioName == null || s.name == scenarioName)
