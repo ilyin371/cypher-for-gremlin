@@ -24,6 +24,9 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.opencypher.gremlin.groups.SkipWithBytecode;
+import org.opencypher.gremlin.groups.SkipWithGremlinGroovy;
 import org.opencypher.gremlin.rules.GremlinServerExternalResource;
 
 public class MergeTest {
@@ -237,6 +240,31 @@ public class MergeTest {
         assertThat(results)
             .extracting("count")
             .containsExactly(1L);
+    }
+
+    @Test
+    @Category({SkipWithGremlinGroovy.class, SkipWithBytecode.class})
+    public void doNotMatchOnDeletedEntities() throws Exception {
+        submitAndGet("MATCH (n) DETACH DELETE n");
+
+        submitAndGet("CREATE (a:A)" +
+            "CREATE (b1:B {value: 0}), (b2:B {value: 1})" +
+            "CREATE (c1:C), (c2:C)" +
+            "CREATE (a)-[:REL]->(b1)," +
+            "       (a)-[:REL]->(b2)," +
+            "       (b1)-[:REL]->(c1)," +
+            "       (b2)-[:REL]->(c2)");
+
+        String query = "MATCH (a:A)-[ab]->(b:B)-[bc]->(c:C) " +
+            "DELETE ab, bc, b, c " +
+            "MERGE (newB:B {value: 1}) " +
+            "MERGE (a)-[:REL]->(newB) " +
+            "MERGE (newC:C) " +
+            "MERGE (newB)-[:REL]->(newC) ";
+
+        List<Map<String, Object>> results = submitAndGet(query);
+        assertThat(results)
+            .isEmpty();
     }
 
 }
