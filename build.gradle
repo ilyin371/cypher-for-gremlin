@@ -298,7 +298,10 @@ project(':testware:tck') {
         onlyIf { project.hasTckTask() }
         ext.cucumberReportDir = "${project.buildDir.absolutePath}/reports/tests/cucumber"
         systemProperty "cucumber.options", "--plugin 'json:${ext.cucumberReportDir}/cucumber.json"
-        useJUnitPlatform()
+        useJUnitPlatform {
+            jvmArgs '-Xdebug',
+                '-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005'
+        }
         ignoreFailures true
 
         systemProperty 'feature', System.getProperty('feature')
