@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
+@SuppressWarnings("unchecked")
 public class ImmutablePath implements Path, Serializable, Cloneable {
 
     private static final Logger log = getLogger(ImmutablePath.class);
