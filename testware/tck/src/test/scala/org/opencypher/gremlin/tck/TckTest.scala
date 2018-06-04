@@ -74,7 +74,7 @@ object TinkerGraphServerEmbeddedGraph extends Graph with ProcedureSupport {
 class TckTest {
   @TestFactory
   def testTck(): util.Collection[DynamicTest] = {
-    val scenarioName = "Do not match on deleted entities" //System.getProperty("scenario")
+    val scenarioName = "Do not match on deleted entities" // System.getProperty("scenario")
     val featureName = System.getProperty("feature")
 
     val scenarios = CypherTCK.allTckScenarios

@@ -299,8 +299,8 @@ project(':testware:tck') {
         ext.cucumberReportDir = "${project.buildDir.absolutePath}/reports/tests/cucumber"
         systemProperty "cucumber.options", "--plugin 'json:${ext.cucumberReportDir}/cucumber.json"
         useJUnitPlatform {
-            jvmArgs '-Xdebug',
-                '-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005'
+//            jvmArgs '-Xdebug',
+//                '-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005'
         }
         ignoreFailures true
 
