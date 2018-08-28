@@ -34,7 +34,7 @@ public final class GroovyIdentifiers {
     ));
 
     public static boolean isValidIdentifier(String value) {
-        char[] chars = value.toCharArray();
+        char[] chars = value.trim().toCharArray();
         int length = chars.length;
         if (length == 0) {
             return false;

@@ -15,12 +15,15 @@
  */
 package org.opencypher.gremlin.traversal;
 
+import static scala.collection.JavaConversions.seqAsJavaList;
+
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.opencypher.gremlin.translation.Tokens;
+import scala.collection.Seq;
 
 public final class ParameterNormalizer {
     private ParameterNormalizer() {
@@ -30,11 +33,14 @@ public final class ParameterNormalizer {
         return normalizeMap(parameters);
     }
 
+    @SuppressWarnings("unchecked")
     private static Object normalizeValue(Object value) {
         if (value instanceof Map) {
             return normalizeMap((Map<?, ?>) value);
         } else if (value instanceof List) {
             return normalizeList((List<?>) value);
+        } else if (value instanceof Seq) {
+            return normalizeList(seqAsJavaList((Seq) value));
         } else if (value instanceof Integer) {
             return ((Integer) value).longValue();
         } else if (value instanceof BigDecimal) {

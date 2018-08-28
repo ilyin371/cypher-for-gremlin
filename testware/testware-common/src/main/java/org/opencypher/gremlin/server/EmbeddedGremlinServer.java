@@ -136,6 +136,12 @@ public final class EmbeddedGremlinServer {
                 settings.serializers.add(serializerSettings);
             });
 
+            Settings.ProcessorSettings processorSettings = new Settings.ProcessorSettings();
+            processorSettings.className = "org.apache.tinkerpop.gremlin.server.op.standard.StandardOpProcessor";
+            processorSettings.config = new HashMap<>();
+            processorSettings.config.put("maxParameters", 128);
+            settings.processors.add(processorSettings);
+
             return new EmbeddedGremlinServer(settings);
         }
 

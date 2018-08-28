@@ -20,6 +20,8 @@ import static org.opencypher.gremlin.client.CommonResultSets.exceptional;
 import static org.opencypher.gremlin.client.CommonResultSets.explain;
 import static org.opencypher.gremlin.translation.StatementOption.EXPLAIN;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
@@ -51,7 +53,7 @@ final class GroovyCypherGremlinClient implements CypherGremlinClient {
         Map<String, Object> normalizedParameters = ParameterNormalizer.normalize(parameters);
         CypherAst ast;
         try {
-            ast = CypherAst.parse(cypher, normalizedParameters);
+            ast = CypherAst.parse(cypher, normalizedParameters, Collections.emptyMap(), true);
         } catch (Exception e) {
             return completedFuture(exceptional(e));
         }
@@ -68,7 +70,13 @@ final class GroovyCypherGremlinClient implements CypherGremlinClient {
             return completedFuture(exceptional(e));
         }
 
-        CompletableFuture<ResultSet> resultSetFuture = client.submitAsync(gremlin, normalizedParameters);
+        Map<String, Object> mergedParams = new LinkedHashMap<>(normalizedParameters);
+        Map<String, Object> extractedParams = new LinkedHashMap<>();
+        ast.getExtractedParameters()
+            .forEach((param, value) -> extractedParams.put(param.trim(), value));
+        mergedParams.putAll(ParameterNormalizer.normalize(extractedParams));
+
+        CompletableFuture<ResultSet> resultSetFuture = client.submitAsync(gremlin, mergedParams);
         ReturnNormalizer returnNormalizer = ReturnNormalizer.create(ast.getReturnTypes());
         return resultSetFuture
             .thenApply(ResultSet::iterator)

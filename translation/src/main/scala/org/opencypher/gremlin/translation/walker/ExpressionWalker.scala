@@ -435,6 +435,17 @@ private class ExpressionWalker[T, P](context: WalkerContext[T, P], g: GremlinSte
         NumericRange.inclusive(start.value, end.value, 1)
       case Seq(start: IntegerLiteral, end: IntegerLiteral, step: IntegerLiteral) =>
         NumericRange.inclusive(start.value, end.value, step.value)
+      case Seq(start: Parameter, end: Parameter) =>
+        NumericRange.inclusive(
+          inlineExpressionValue(start, context).asInstanceOf[Long],
+          inlineExpressionValue(end, context).asInstanceOf[Long],
+          1) //TODO: remove the inlined params from walker context and CypherAst
+      case Seq(start: Parameter, end: Parameter, step: Parameter) =>
+        NumericRange.inclusive(
+          inlineExpressionValue(start, context).asInstanceOf[Long],
+          inlineExpressionValue(end, context).asInstanceOf[Long],
+          inlineExpressionValue(step, context).asInstanceOf[Long]
+        )
     }
 
     context.precondition(

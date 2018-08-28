@@ -34,7 +34,7 @@ import org.opencypher.v9_0.ast._
 import org.opencypher.v9_0.expressions._
 import org.opencypher.v9_0.frontend.phases._
 import org.opencypher.v9_0.rewriting.RewriterStepSequencer
-import org.opencypher.v9_0.rewriting.rewriters.Never
+import org.opencypher.v9_0.rewriting.rewriters.{Forced, Never}
 import org.opencypher.v9_0.util.symbols._
 import org.opencypher.v9_0.util.{ASTNode, CypherException}
 
@@ -55,6 +55,7 @@ import scala.collection.mutable
 class CypherAst private (
     val statement: Statement,
     parameters: Map[String, Any],
+    extractedParameters: Map[String, Any],
     expressionTypes: Map[Expression, CypherType],
     returnTypes: Map[String, CypherType],
     options: Seq[PreParserOption]) {
@@ -78,7 +79,7 @@ class CypherAst private (
       .enableMultipleLabels()
       .build()
 
-    val context = WalkerContext(dsl, expressionTypes, returnTypes, procedures, parameters)
+    val context = WalkerContext(dsl, expressionTypes, returnTypes, procedures, parameters ++ extractedParameters)
     StatementWalker.walk(context, statement)
     val ir = dsl.translate()
 
@@ -125,6 +126,11 @@ class CypherAst private (
     */
   def getReturnTypes: util.Map[String, CypherType] = {
     new util.LinkedHashMap[String, CypherType](returnTypes.asJava)
+  }
+
+  def getExtractedParameters: util.Map[String, Object] = {
+    val parametersJava = extractedParameters.mapValues(_.asInstanceOf[Object]).asJava
+    new util.LinkedHashMap[String, Object](parametersJava)
   }
 
   /**
@@ -203,21 +209,42 @@ object CypherAst {
   def parse(
       queryText: String,
       parameters: util.Map[String, _],
-      procedures: util.Map[String, CypherProcedureSignature]): CypherAst = {
+      procedures: util.Map[String, CypherProcedureSignature]
+  ): CypherAst = {
+    parse(queryText, parameters, procedures, false)
+  }
+
+  /**
+    * Constructs a new Cypher AST from the provided query.
+    *
+    * @param queryText         Cypher query
+    * @param parameters        Cypher query parameters
+    * @param procedures        registered procedure context
+    * @param extractParameters extract literals as query parameters
+    * @return Cypher AST wrapper
+    */
+  @throws[CypherException]
+  def parse(
+      queryText: String,
+      parameters: util.Map[String, _],
+      procedures: util.Map[String, CypherProcedureSignature],
+      extractParameters: Boolean): CypherAst = {
     val scalaParameters = parameters.asScala.toMap
     val scalaProcedures = procedures.asScala.toMap
-    parse(queryText, scalaParameters, scalaProcedures)
+    parse(queryText, scalaParameters, scalaProcedures, extractParameters)
   }
 
   @throws[CypherException]
   private def parse(
       queryText: String,
       parameters: Map[String, Any],
-      procedures: Map[String, CypherProcedureSignature]): CypherAst = {
+      procedures: Map[String, CypherProcedureSignature],
+      extractParameters: Boolean = false): CypherAst = {
     val PreParsedStatement(preParsedQueryText, options, offset) = CypherPreParser(queryText)
     val startState = InitialState(preParsedQueryText, Some(offset), EmptyPlannerName)
+    val literalExtraction = if (extractParameters) Forced else Never
     val state = CompilationPhases
-      .parsing(RewriterStepSequencer.newPlain, literalExtraction = Never)
+      .parsing(RewriterStepSequencer.newPlain, literalExtraction)
       .andThen(isolateAggregation)
       .andThen(SemanticAnalysis(warn = false))
       .andThen(Normalization)
@@ -226,8 +253,9 @@ object CypherAst {
     val statement = state.statement()
     val expressionTypes = getExpressionTypes(state)
     val returnTypes = getReturnTypes(expressionTypes, statement, procedures)
+    val extractedParameters = state.extractedParams();
 
-    new CypherAst(statement, parameters, expressionTypes, returnTypes, options)
+    new CypherAst(statement, parameters, extractedParameters, expressionTypes, returnTypes, options)
   }
 
   private def getExpressionTypes(state: BaseState): Map[Expression, CypherType] = {

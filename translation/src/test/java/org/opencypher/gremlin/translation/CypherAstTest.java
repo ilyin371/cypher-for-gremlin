@@ -203,4 +203,16 @@ public class CypherAstTest {
         assertThatThrownBy(() -> ast.buildTranslation(translator))
             .hasMessageContaining("cypherContains, cypherEndsWith, cypherSize, cypherStarsWith, cypherToString");
     }
+
+    @Test
+    public void extractParameters() {
+        String cypher = "MATCH (n:person) " +
+            "WHERE n.name = 'marko' " +
+            "AND n.age = 29 " +
+            "RETURN n";
+        CypherAst ast = CypherAst.parse(cypher, emptyMap(), emptyMap(), true);
+        Map<String, Object> parameters = ast.getExtractedParameters();
+        assertThat(parameters)
+            .containsValues("marko", 29L);
+    }
 }
